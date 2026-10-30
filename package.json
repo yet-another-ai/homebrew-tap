@@ -1,0 +1,22 @@
+{
+  "name": "@yet-another-ai/homebrew-tap-tools",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "node --test scripts/*.test.ts",
+    "sync": "node scripts/sync-deskfleet.ts"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.1",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "oxfmt": "0.70.0"
+  },
+  "engines": {
+    "node": "26.x",
+    "pnpm": "12.x"
+  }
+}
