@@ -7,8 +7,8 @@ release assets. This Tap owns installation instructions and synchronization. The
 cask tracks the latest published stable release selected by the GitHub Releases
 API.
 
-| Product   | Sync triggers                         | Sync workflow        | Cask                 | Asset                           |
-| --------- | ------------------------------------- | -------------------- | -------------------- | ------------------------------- |
+| Product   | Sync triggers                          | Sync workflow        | Cask                 | Asset                           |
+| --------- | -------------------------------------- | -------------------- | -------------------- | ------------------------------- |
 | DeskFleet | weekday schedule + `workflow_dispatch` | `sync-deskfleet.yml` | `Casks/deskfleet.rb` | `deskfleet-<ver>-mac-arm64.dmg` |
 
 Synchronization is tap-owned. A weekday cron (every two hours) and manual
