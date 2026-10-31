@@ -7,14 +7,15 @@ release assets. This Tap owns installation instructions and synchronization. The
 cask tracks the latest published stable release selected by the GitHub Releases
 API.
 
-| Product   | Dispatch event                | Sync workflow        | Cask                 | Asset                           |
-| --------- | ----------------------------- | -------------------- | -------------------- | ------------------------------- |
-| DeskFleet | `deskfleet-release-published` | `sync-deskfleet.yml` | `Casks/deskfleet.rb` | `deskfleet-<ver>-mac-arm64.dmg` |
+| Product   | Sync triggers                          | Sync workflow        | Cask                 | Asset                           |
+| --------- | -------------------------------------- | -------------------- | -------------------- | ------------------------------- |
+| DeskFleet | weekday schedule + `workflow_dispatch` | `sync-deskfleet.yml` | `Casks/deskfleet.rb` | `deskfleet-<ver>-mac-arm64.dmg` |
 
-DeskFleet sends its dispatch after a stable release is published. The Tap treats
-that event as a wake-up signal and queries upstream again. Delayed older
-notifications synchronize the current release. Drafts, prereleases, incomplete
-assets, noncanonical URLs, downgrades, and changed bytes at the same version are
+Synchronization is tap-owned. A weekday cron (every two hours) and manual
+`workflow_dispatch` wake the sync workflow. DeskFleet does not notify this Tap
+and does not hold Tap credentials. Delayed runs still query upstream and
+synchronize the current stable release. Drafts, prereleases, incomplete assets,
+noncanonical URLs, downgrades, and changed bytes at the same version are
 rejected.
 
 `scripts/sync-deskfleet.ts` reads the Apple Silicon DMG's SHA-256 digest from
@@ -24,9 +25,22 @@ Release metadata must remain unchanged before the cask is replaced atomically.
 Only `version` and `sha256` are updated; installation settings remain intact.
 
 Successful synchronization creates or updates the fixed PR branch
-`dsh0416/update-deskfleet`. Repeated notifications create no additional PRs or
-commits. Required CI checks gate auto-merge. Failures leave the published cask
-intact. The Tap can briefly lag a release; there is no scheduled reconciliation.
+`dsh0416/update-deskfleet` using the default `GITHUB_TOKEN`. Repeated runs create
+no additional PRs or commits when the cask is already current. The workflow
+stops after opening or updating the PR; it does not enable auto-merge. A
+maintainer reviews and merges. Failures leave the published cask intact. The Tap
+can briefly lag a release until the next schedule or manual dispatch.
+
+PRs created with `GITHUB_TOKEN` do not trigger repository workflows the same way
+a personal access token or GitHub App token would. Required checks such as
+Utilities may not run automatically on the sync PR. Review the cask diff and
+merge manually; run local validation or re-run checks if you need CI signal
+before merging.
+
+No GitHub App and no `TAP_SYNC_TOKEN` (or other long-lived PAT) are required for
+sync. Remove any legacy Tap sync secrets from this repository and from DeskFleet
+if they still exist. Public upstream release metadata is fetched without
+credentials.
 
 The current cask requires Apple Silicon and macOS 13 Ventura or later. DeskFleet
 v0.2.1 uses Electron 45; [Electron 44 and later require macOS 13](https://www.electronjs.org/blog/electron-44-0).
@@ -34,69 +48,36 @@ When upstream changes its supported platforms, review these requirements along
 with the cask. The cask has no `zap` stanza: DeskFleet's application profile can
 contain session worktrees and must survive uninstallation.
 
-## One-time credential setup
-
-Create a fine-grained personal access token:
-
-1. Set resource owner to `yet-another-ai` and select only `homebrew-tap`.
-2. Grant **Contents: Read and write** and **Pull requests: Read and write**.
-   Metadata read access is implicit. DeskFleet repository write access is not
-   needed.
-3. Complete organization approval if the token is shown as pending.
-4. Add the token as Actions secret `TAP_SYNC_TOKEN` in `yet-another-ai/deskfleet`
-   and `yet-another-ai/homebrew-tap`, or use an organization secret visible to
-   exactly these repositories.
-5. Renew the token before expiration and replace the secrets.
-
-DeskFleet uses the token for repository dispatch. The Tap uses it to push the
-release branch, create or update the PR, and enable auto-merge. Public upstream
-metadata is fetched without credentials.
-
-The default `GITHUB_TOKEN` is limited to its own repository. A PAT enables the
-cross-repository notification and allows PR checks to run. See
-[GitHub's token documentation](https://docs.github.com/en/actions/concepts/security/github_token)
-and [dispatch permissions](https://docs.github.com/en/rest/repos/repos#create-a-repository-dispatch-event).
-
 ## Required repository settings
 
 After publishing the initial Tap files and running **Check utilities** once:
 
-1. Enable **Allow auto-merge** and **Allow squash merging** in Settings → General.
-2. Add classic branch protection for `main`, requiring a pull request and the
-   `Utilities` check.
-3. Require the branch to be up to date before merging. Leave required approving
-   reviews disabled if release PRs should merge without manual review.
+1. Enable **Allow squash merging** in Settings → General. Auto-merge is not
+   required for sync PRs.
+2. Add classic branch protection for `main` if you want pull requests and the
+   `Utilities` check on human-authored changes. Sync PRs opened with
+   `GITHUB_TOKEN` may not exercise those checks automatically.
+3. Keep the fixed automation branch outside the protected branch pattern:
+   updating its PR may require a force push.
 
-Use the exact check name above. Keep the fixed automation branch outside the
-protected branch pattern: updating its PR may require a force push. Before
-requesting auto-merge, the sync workflow checks that auto-merge is enabled and
-the required `Utilities` check protects `main`. Missing settings fail the run
-and leave the PR available for review.
-
-If a newer stable release appears during synchronization, dispatch again to
-refresh that same PR. Normal release notifications do this automatically; a lost
-notification needs a manual retry. Intentional rollbacks and same-version
-replacements require investigation and a reviewed change.
+If a newer stable release appears before the next scheduled run, dispatch the
+sync workflow manually to refresh that same PR. Intentional rollbacks and
+same-version replacements require investigation and a reviewed change.
 
 ## Bootstrap and manual retry
 
-Dispatch workflows must be on their repositories' default branches.
+The sync workflow must exist on the repository default branch for schedule and
+manual runs.
 
-Run from any GitHub-authenticated checkout:
+Run from any GitHub-authenticated checkout after a DeskFleet release:
 
 ```sh
 gh workflow run sync-deskfleet.yml --repo yet-another-ai/homebrew-tap --ref main
 ```
 
-To retry the upstream notification:
-
-```sh
-gh workflow run notify-homebrew-tap.yml --repo yet-another-ai/deskfleet --ref main
-```
-
-Both paths reconcile the current stable release without a manually supplied
-version. Missing or expired credentials fail the workflow; replace the secret
-and retry.
+This reconciles the current stable release without a manually supplied version
+and opens or updates the sync PR for manual review. DeskFleet has no companion
+notify workflow for this Tap.
 
 ## Local validation
 

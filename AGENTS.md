@@ -17,9 +17,10 @@ branches.
   GitHub's Release API; Homebrew verifies the installer when installing it.
 - Do not add tests that restate Cask contents or implementation details, or
   duplicate upstream Homebrew validation and upstream application checks.
-- Keep notifications and manual dispatch as the only sync triggers. Do not add
-  a scheduled workflow without a maintainer request.
+- Keep schedule and manual `workflow_dispatch` as the sync triggers. Upstream
+  application repos do not wake this Tap and must not hold Tap credentials.
 - Preserve application installation settings when updating a release. Projects
   and user data must not be removed by uninstall or a broad `zap` definition.
-- Never put credentials in source. `TAP_SYNC_TOKEN` is a fine-grained PAT limited
-  to this repository; setup is documented in `agents/docs/maintenance.md`.
+- Never put credentials in source. Sync PRs use the default `GITHUB_TOKEN` and
+  stop for manual review; do not add a Tap sync PAT or GitHub App for this
+  path. Details are in `agents/docs/maintenance.md`.
