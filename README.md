@@ -30,8 +30,8 @@ window keeps DeskFleet running in the tray.
 This Tap installs the published Apple Silicon macOS DMG from
 [DeskFleet releases](https://github.com/yet-another-ai/deskfleet/releases).
 DeskFleet owns application versions and builds. This Tap reconciles the cask on
-a weekday schedule and via manual workflow dispatch, then opens a checked pull
-request.
+a weekday schedule and via manual workflow dispatch, then opens a pull request
+for maintainer review.
 
-For GitHub App setup, required checks, local commands, and manual synchronization,
-see [Tap maintenance](agents/docs/maintenance.md).
+For required checks, local commands, and manual synchronization, see
+[Tap maintenance](agents/docs/maintenance.md).

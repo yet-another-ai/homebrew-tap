@@ -7,7 +7,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: sync-deskfleet
@@ -23,27 +24,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: main
-          persist-credentials: false
-
-      - name: Require GitHub App credentials
-        env:
-          APP_CLIENT_ID: ${{ vars.APP_CLIENT_ID }}
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: |
-          missing=()
-          [[ -z "$APP_CLIENT_ID" ]] && missing+=("repository variable APP_CLIENT_ID")
-          [[ -z "$APP_PRIVATE_KEY" ]] && missing+=("repository secret APP_PRIVATE_KEY")
-          if ((${#missing[@]} > 0)); then
-            echo "::error::Missing GitHub App credentials: ${missing[*]}. Configure the one-time App setup in agents/docs/maintenance.md. A personal TAP_SYNC_TOKEN is not used."
-            exit 1
-          fi
-
-      - name: Create GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Install locked toolchain
         uses: jdx/mise-action@v5
@@ -58,14 +38,13 @@ jobs:
         id: release
         run: mise run sync
 
-      # An App installation token allows PR checks to start without the approval
-      # needed for PRs created with GITHUB_TOKEN. The App is installed only on
-      # this Tap with Contents and Pull requests write.
+      # Default GITHUB_TOKEN opens the PR for maintainer review. Do not auto-merge.
+      # PRs created with GITHUB_TOKEN do not start repository workflows the same way
+      # a PAT or App token would; the maintainer reviews and merges manually.
       - name: Create or update release PR
-        id: pull_request
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ github.token }}
           base: main
           branch: dsh0416/update-deskfleet
           delete-branch: true
@@ -76,25 +55,4 @@ jobs:
             Track the latest published stable DeskFleet release.
 
             Use GitHub's published Apple Silicon DMG digest for the Cask.
-            The Utilities check must pass before this PR can merge.
-
-      - name: Enable auto-merge after required checks
-        if: steps.pull_request.outputs.pull-request-number != ''
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.pull_request.outputs.pull-request-number }}
-        run: |
-          if [[ "$(gh api "repos/$GH_REPO" --jq .allow_auto_merge)" != true ]]; then
-            echo "::error::Enable Allow auto-merge in the Tap repository settings."
-            exit 1
-          fi
-          protected="$(gh api "repos/$GH_REPO/branches/main" --jq '
-            .protected and ((.protection.required_status_checks.contexts // []) |
-            contains(["Utilities"]))
-          ')"
-          if [[ "$protected" != true ]]; then
-            echo "::error::Protect main with the Utilities check documented in agents/docs/maintenance.md."
-            exit 1
-          fi
-          gh pr merge "$PR_NUMBER" --auto --squash
+            Review and merge manually; this PR is not auto-merged.

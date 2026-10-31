@@ -21,6 +21,6 @@ branches.
   application repos do not wake this Tap and must not hold Tap credentials.
 - Preserve application installation settings when updating a release. Projects
   and user data must not be removed by uninstall or a broad `zap` definition.
-- Never put credentials in source. Sync PRs use a GitHub App installed only on
-  this Tap (`APP_CLIENT_ID` variable and `APP_PRIVATE_KEY` secret); setup is
-  documented in `agents/docs/maintenance.md`.
+- Never put credentials in source. Sync PRs use the default `GITHUB_TOKEN` and
+  stop for manual review; do not add a Tap sync PAT or GitHub App for this
+  path. Details are in `agents/docs/maintenance.md`.

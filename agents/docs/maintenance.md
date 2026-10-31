@@ -25,10 +25,22 @@ Release metadata must remain unchanged before the cask is replaced atomically.
 Only `version` and `sha256` are updated; installation settings remain intact.
 
 Successful synchronization creates or updates the fixed PR branch
-`dsh0416/update-deskfleet`. Repeated runs create no additional PRs or commits
-when the cask is already current. Required CI checks gate auto-merge. Failures
-leave the published cask intact. The Tap can briefly lag a release until the
-next schedule or manual dispatch.
+`dsh0416/update-deskfleet` using the default `GITHUB_TOKEN`. Repeated runs create
+no additional PRs or commits when the cask is already current. The workflow
+stops after opening or updating the PR; it does not enable auto-merge. A
+maintainer reviews and merges. Failures leave the published cask intact. The Tap
+can briefly lag a release until the next schedule or manual dispatch.
+
+PRs created with `GITHUB_TOKEN` do not trigger repository workflows the same way
+a personal access token or GitHub App token would. Required checks such as
+Utilities may not run automatically on the sync PR. Review the cask diff and
+merge manually; run local validation or re-run checks if you need CI signal
+before merging.
+
+No GitHub App and no `TAP_SYNC_TOKEN` (or other long-lived PAT) are required for
+sync. Remove any legacy Tap sync secrets from this repository and from DeskFleet
+if they still exist. Public upstream release metadata is fetched without
+credentials.
 
 The current cask requires Apple Silicon and macOS 13 Ventura or later. DeskFleet
 v0.2.1 uses Electron 45; [Electron 44 and later require macOS 13](https://www.electronjs.org/blog/electron-44-0).
@@ -36,54 +48,17 @@ When upstream changes its supported platforms, review these requirements along
 with the cask. The cask has no `zap` stanza: DeskFleet's application profile can
 contain session worktrees and must survive uninstallation.
 
-## One-time GitHub App setup
-
-Use a GitHub App installed only on this Tap to open sync PRs and enable
-auto-merge. Do not use a personal access token, and do not store Tap credentials
-in DeskFleet.
-
-1. Register a GitHub App under the `yet-another-ai` organization (or transfer it
-   there). Suggested name: `homebrew-tap-sync`. Leave webhooks disabled unless
-   you need them for another purpose.
-2. Set repository permissions to **Contents: Read and write** and
-   **Pull requests: Read and write**. Metadata read access is implicit. Do not
-   grant DeskFleet or other repositories access.
-3. Generate a private key and download the `.pem` file. Copy the App **Client
-   ID** from the App settings page (prefer Client ID over the numeric App ID).
-4. Install the App on `yet-another-ai/homebrew-tap` only.
-5. In `yet-another-ai/homebrew-tap` Actions settings:
-   - Add repository variable `APP_CLIENT_ID` with the Client ID.
-   - Add repository secret `APP_PRIVATE_KEY` with the full PEM contents,
-     including the `BEGIN`/`END` lines.
-6. Remove any legacy `TAP_SYNC_TOKEN` secrets from this Tap and from DeskFleet
-   if they still exist. DeskFleet no longer needs a Tap token for releases.
-
-The sync workflow uses
-[`actions/create-github-app-token`](https://github.com/actions/create-github-app-token)
-to mint a short-lived installation token, then
-[`peter-evans/create-pull-request`](https://github.com/peter-evans/create-pull-request)
-and `gh pr merge --auto` with that token. An App token allows the Utilities
-workflow to run on the sync PR; PRs created with the default `GITHUB_TOKEN` do
-not start repository workflows. Missing `APP_CLIENT_ID` or `APP_PRIVATE_KEY`
-fails the job with a clear error pointing here.
-
-Public upstream release metadata is fetched without credentials.
-
 ## Required repository settings
 
 After publishing the initial Tap files and running **Check utilities** once:
 
-1. Enable **Allow auto-merge** and **Allow squash merging** in Settings → General.
-2. Add classic branch protection for `main`, requiring a pull request and the
-   `Utilities` check.
-3. Require the branch to be up to date before merging. Leave required approving
-   reviews disabled if release PRs should merge without manual review.
-
-Use the exact check name above. Keep the fixed automation branch outside the
-protected branch pattern: updating its PR may require a force push. Before
-requesting auto-merge, the sync workflow checks that auto-merge is enabled and
-the required `Utilities` check protects `main`. Missing settings fail the run
-and leave the PR available for review.
+1. Enable **Allow squash merging** in Settings → General. Auto-merge is not
+   required for sync PRs.
+2. Add classic branch protection for `main` if you want pull requests and the
+   `Utilities` check on human-authored changes. Sync PRs opened with
+   `GITHUB_TOKEN` may not exercise those checks automatically.
+3. Keep the fixed automation branch outside the protected branch pattern:
+   updating its PR may require a force push.
 
 If a newer stable release appears before the next scheduled run, dispatch the
 sync workflow manually to refresh that same PR. Intentional rollbacks and
@@ -94,16 +69,15 @@ same-version replacements require investigation and a reviewed change.
 The sync workflow must exist on the repository default branch for schedule and
 manual runs.
 
-Run from any GitHub-authenticated checkout after a DeskFleet release, or when
-credentials or branch protection were fixed:
+Run from any GitHub-authenticated checkout after a DeskFleet release:
 
 ```sh
 gh workflow run sync-deskfleet.yml --repo yet-another-ai/homebrew-tap --ref main
 ```
 
-This reconciles the current stable release without a manually supplied version.
-Missing App credentials fail the workflow; complete the one-time App setup above
-and retry. DeskFleet has no companion notify workflow for this Tap.
+This reconciles the current stable release without a manually supplied version
+and opens or updates the sync PR for manual review. DeskFleet has no companion
+notify workflow for this Tap.
 
 ## Local validation
 
