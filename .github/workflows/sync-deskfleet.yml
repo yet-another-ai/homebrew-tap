@@ -1,8 +1,9 @@
 name: Sync DeskFleet release
 
 on:
-  repository_dispatch:
-    types: [deskfleet-release-published]
+  schedule:
+    # Weekdays every two hours; offset minutes to avoid top-of-hour contention.
+    - cron: "17 */2 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -24,14 +25,25 @@ jobs:
           ref: main
           persist-credentials: false
 
-      - name: Require synchronization credentials
+      - name: Require GitHub App credentials
         env:
-          TAP_SYNC_TOKEN: ${{ secrets.TAP_SYNC_TOKEN }}
+          APP_CLIENT_ID: ${{ vars.APP_CLIENT_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
-          if [[ -z "$TAP_SYNC_TOKEN" ]]; then
-            echo "::error::Configure TAP_SYNC_TOKEN as described in agents/docs/maintenance.md."
+          missing=()
+          [[ -z "$APP_CLIENT_ID" ]] && missing+=("repository variable APP_CLIENT_ID")
+          [[ -z "$APP_PRIVATE_KEY" ]] && missing+=("repository secret APP_PRIVATE_KEY")
+          if ((${#missing[@]} > 0)); then
+            echo "::error::Missing GitHub App credentials: ${missing[*]}. Configure the one-time App setup in agents/docs/maintenance.md. A personal TAP_SYNC_TOKEN is not used."
             exit 1
           fi
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Install locked toolchain
         uses: jdx/mise-action@v5
@@ -46,13 +58,14 @@ jobs:
         id: release
         run: mise run sync
 
-      # A PAT allows PR checks to start without the approval needed for PRs
-      # created with GITHUB_TOKEN. This token can access only this Tap.
+      # An App installation token allows PR checks to start without the approval
+      # needed for PRs created with GITHUB_TOKEN. The App is installed only on
+      # this Tap with Contents and Pull requests write.
       - name: Create or update release PR
         id: pull_request
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.TAP_SYNC_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           base: main
           branch: dsh0416/update-deskfleet
           delete-branch: true
@@ -68,7 +81,7 @@ jobs:
       - name: Enable auto-merge after required checks
         if: steps.pull_request.outputs.pull-request-number != ''
         env:
-          GH_TOKEN: ${{ secrets.TAP_SYNC_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ steps.pull_request.outputs.pull-request-number }}
         run: |
