@@ -1,6 +1,6 @@
 cask "deskfleet" do
-  version "0.2.1"
-  sha256 "391902f64895849f27b21374de79d046db0461cb78c61724d7e4495c53079d98"
+  version "0.4.0"
+  sha256 "a3445bc26542bfaa46a61c0948d8e19dc653dcd3bfae7ab572408e2fa3767568"
 
   url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-#{version}-mac-arm64.dmg"
   name "DeskFleet"
