@@ -41,7 +41,12 @@ jobs:
       # Default GITHUB_TOKEN opens the PR for maintainer review. Do not auto-merge.
       # PRs created with GITHUB_TOKEN do not start repository workflows the same way
       # a PAT or App token would; the maintainer reviews and merges manually.
+      # Requires Settings → Actions → General → "Allow GitHub Actions to create and
+      # approve pull requests" (repo or org). Without it, branch push can succeed
+      # while PR creation fails with the permission error annotated below.
       - name: Create or update release PR
+        id: pr
+        if: steps.release.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ github.token }}
@@ -56,3 +61,13 @@ jobs:
 
             Use GitHub's published Apple Silicon DMG digest for the Cask.
             Review and merge manually; this PR is not auto-merged.
+
+      - name: Explain Actions pull request permission failure
+        if: failure() && steps.pr.conclusion == 'failure'
+        run: |
+          {
+            echo "::error::Create or update release PR failed."
+            echo "If the step log shows 'GitHub Actions is not permitted to create or approve pull requests', enable the Actions workflow permission below (do not add a Tap sync PAT or GitHub App):"
+            node scripts/actions-pr-permission.ts
+          } >&2
+          exit 1

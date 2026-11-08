@@ -52,12 +52,21 @@ contain session worktrees and must survive uninstallation.
 
 After publishing the initial Tap files and running **Check utilities** once:
 
-1. Enable **Allow squash merging** in Settings → General. Auto-merge is not
+1. Enable **Allow GitHub Actions to create and approve pull requests** under
+   Settings → Actions → General → Workflow permissions (repository and/or
+   organization). The sync workflow already requests `contents: write` and
+   `pull-requests: write` on the default `GITHUB_TOKEN`. Without this Actions
+   setting, synchronization can still update the fixed branch
+   `dsh0416/update-deskfleet`, but **Create or update release PR** fails with
+   `GitHub Actions is not permitted to create or approve pull requests`. Do not
+   work around that failure with a Tap sync PAT, GitHub App, or DeskFleet-side
+   notify job.
+2. Enable **Allow squash merging** in Settings → General. Auto-merge is not
    required for sync PRs.
-2. Add classic branch protection for `main` if you want pull requests and the
+3. Add classic branch protection for `main` if you want pull requests and the
    `Utilities` check on human-authored changes. Sync PRs opened with
    `GITHUB_TOKEN` may not exercise those checks automatically.
-3. Keep the fixed automation branch outside the protected branch pattern:
+4. Keep the fixed automation branch outside the protected branch pattern:
    updating its PR may require a force push.
 
 If a newer stable release appears before the next scheduled run, dispatch the
