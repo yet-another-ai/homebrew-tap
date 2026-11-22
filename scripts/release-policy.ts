@@ -120,7 +120,7 @@ const dualSha256 = /^  sha256 arm:\s+"([a-f0-9]{64})",\n\s+intel:\s+"([a-f0-9]{6
 
 const formulaSha256 = (arch: MacArch) =>
   new RegExp(
-    String.raw`^  on_${arch === "arm64" ? "arm" : "intel"} do\n(?:.*\n)*?    sha256 "([a-f0-9]{64})"`,
+    String.raw`^\s+on_${arch === "arm64" ? "arm" : "intel"} do\n(?:.*\n)*?\s+sha256 "([a-f0-9]{64})"`,
     "m"
   )
 

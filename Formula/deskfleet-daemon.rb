@@ -4,14 +4,18 @@ class DeskfleetDaemon < Formula
   version "0.21.0"
   license "Apache-2.0"
 
-  on_arm do
-    url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-arm64.tar.gz"
-    sha256 "179da7f69c28b6ae6014e5a6131063ac9782dc07ad66c1b4ea8a690697679e09"
-  end
+  depends_on :macos
 
-  on_intel do
-    url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-x64.tar.gz"
-    sha256 "026baadeb5d1038d7c653b5ee6a7c0c76d187a1ea4436ce6ddc023205c5e9755"
+  on_macos do
+    on_arm do
+      url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-arm64.tar.gz"
+      sha256 "179da7f69c28b6ae6014e5a6131063ac9782dc07ad66c1b4ea8a690697679e09"
+    end
+
+    on_intel do
+      url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-x64.tar.gz"
+      sha256 "026baadeb5d1038d7c653b5ee6a7c0c76d187a1ea4436ce6ddc023205c5e9755"
+    end
   end
 
   livecheck do

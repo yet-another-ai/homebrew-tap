@@ -32,14 +32,18 @@ const formula = `class DeskfleetDaemon < Formula
   version "1.0.0"
   license "Apache-2.0"
 
-  on_arm do
-    url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-arm64.tar.gz"
-    sha256 "${oldArm}"
-  end
+  depends_on :macos
 
-  on_intel do
-    url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-x64.tar.gz"
-    sha256 "${oldIntel}"
+  on_macos do
+    on_arm do
+      url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-arm64.tar.gz"
+      sha256 "${oldArm}"
+    end
+
+    on_intel do
+      url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-x64.tar.gz"
+      sha256 "${oldIntel}"
+    end
   end
 
   def install
