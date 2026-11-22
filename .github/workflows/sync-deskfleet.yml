@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   sync:
-    name: Update DeskFleet cask
+    name: Update DeskFleet packaging
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -53,13 +53,16 @@ jobs:
           base: main
           branch: dsh0416/update-deskfleet
           delete-branch: true
-          add-paths: Casks/deskfleet.rb
-          commit-message: "chore(cask): update DeskFleet to ${{ steps.release.outputs.version }}"
-          title: "Update DeskFleet to ${{ steps.release.outputs.version }}"
+          add-paths: |
+            Casks/deskfleet.rb
+            Formula/deskfleet-daemon.rb
+          commit-message: "chore: update DeskFleet packaging to ${{ steps.release.outputs.version }}"
+          title: "Update DeskFleet packaging to ${{ steps.release.outputs.version }}"
           body: |
             Track the latest published stable DeskFleet release.
 
-            Use GitHub's published Apple Silicon DMG digest for the Cask.
+            Use GitHub's published Apple Silicon and Intel macOS DMG digests for
+            the Cask, and both macOS daemon archive digests for the formula.
             Review and merge manually; this PR is not auto-merged.
 
       - name: Explain Actions pull request permission failure

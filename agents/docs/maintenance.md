@@ -4,36 +4,39 @@
 
 DeskFleet owns its version, release tags, packaging, signing, notarization, and
 release assets. This Tap owns installation instructions and synchronization. The
-cask tracks the latest published stable release selected by the GitHub Releases
-API.
+cask and daemon formula track the latest published stable release selected by the
+GitHub Releases API.
 
-| Product   | Sync triggers                          | Sync workflow        | Cask                 | Asset                           |
-| --------- | -------------------------------------- | -------------------- | -------------------- | ------------------------------- |
-| DeskFleet | weekday schedule + `workflow_dispatch` | `sync-deskfleet.yml` | `Casks/deskfleet.rb` | `deskfleet-<ver>-mac-arm64.dmg` |
+| Product           | Sync triggers                          | Sync workflow        | Package                       | Assets                                                         |
+| ----------------- | -------------------------------------- | -------------------- | ----------------------------- | -------------------------------------------------------------- |
+| DeskFleet desktop | weekday schedule + `workflow_dispatch` | `sync-deskfleet.yml` | `Casks/deskfleet.rb`          | `deskfleet-<ver>-mac-arm64.dmg`, `deskfleet-<ver>-mac-x64.dmg` |
+| DeskFleet daemon  | same workflow                          | `sync-deskfleet.yml` | `Formula/deskfleet-daemon.rb` | `deskfleet-macos-arm64.tar.gz`, `deskfleet-macos-x64.tar.gz`   |
 
 Synchronization is tap-owned. A weekday cron (every two hours) and manual
 `workflow_dispatch` wake the sync workflow. DeskFleet does not notify this Tap
 and does not hold Tap credentials. Delayed runs still query upstream and
 synchronize the current stable release. Drafts, prereleases, incomplete assets,
 noncanonical URLs, downgrades, and changed bytes at the same version are
-rejected.
+rejected. Both Apple Silicon and Intel desktop DMGs plus both macOS daemon
+archives must be present before packaging advances.
 
-`scripts/sync-deskfleet.ts` reads the Apple Silicon DMG's SHA-256 digest from
-GitHub's Releases API and writes it into the cask. GitHub generates the digest
-when the asset is uploaded; Homebrew verifies the installer during installation.
-Release metadata must remain unchanged before the cask is replaced atomically.
-Only `version` and `sha256` are updated; installation settings remain intact.
+`scripts/sync-deskfleet.ts` reads each tracked asset's SHA-256 digest from
+GitHub's Releases API and writes it into the cask and formula. GitHub generates
+the digest when the asset is uploaded; Homebrew verifies installers during
+installation. Release metadata must remain unchanged before files are replaced
+atomically. Only `version` and architecture checksums are updated; installation
+settings remain intact.
 
 Successful synchronization creates or updates the fixed PR branch
 `dsh0416/update-deskfleet` using the default `GITHUB_TOKEN`. Repeated runs create
-no additional PRs or commits when the cask is already current. The workflow
+no additional PRs or commits when packaging is already current. The workflow
 stops after opening or updating the PR; it does not enable auto-merge. A
-maintainer reviews and merges. Failures leave the published cask intact. The Tap
-can briefly lag a release until the next schedule or manual dispatch.
+maintainer reviews and merges. Failures leave the published packaging intact. The
+Tap can briefly lag a release until the next schedule or manual dispatch.
 
 PRs created with `GITHUB_TOKEN` do not trigger repository workflows the same way
 a personal access token or GitHub App token would. Required checks such as
-Utilities may not run automatically on the sync PR. Review the cask diff and
+Utilities may not run automatically on the sync PR. Review the packaging diff and
 merge manually; run local validation or re-run checks if you need CI signal
 before merging.
 
@@ -42,11 +45,17 @@ sync. Remove any legacy Tap sync secrets from this repository and from DeskFleet
 if they still exist. Public upstream release metadata is fetched without
 credentials.
 
-The current cask requires Apple Silicon and macOS 13 Ventura or later. DeskFleet
-v0.2.1 uses Electron 45; [Electron 44 and later require macOS 13](https://www.electronjs.org/blog/electron-44-0).
+The desktop cask requires macOS 13 Ventura or later on Apple Silicon and Intel.
+DeskFleet v0.2.1 uses Electron 45; [Electron 44 and later require macOS 13](https://www.electronjs.org/blog/electron-44-0).
 When upstream changes its supported platforms, review these requirements along
 with the cask. The cask has no `zap` stanza: DeskFleet's application profile can
 contain session worktrees and must survive uninstallation.
+
+The daemon formula installs only `deskfleet-daemon` from the macOS server/daemon
+archive (it does not install `deskfleet-server`). The binary accepts
+`--port`, `--info`, and enrollment subcommands documented upstream; do not invent
+additional service flags. Default data lives under `~/.deskfleet`. Linux
+packaging remains outside this Tap (AUR, Nix, and release archives).
 
 ## Required repository settings
 
@@ -96,25 +105,28 @@ mise run check
 ```
 
 `check` runs formatting, TypeScript checks, and release-policy tests. CI also runs
-`ruby -c` on every file under `Casks/`. Upstream release pipelines own application
-building, signing, and notarization.
+`ruby -c` on every file under `Casks/` and `Formula/`. Upstream release pipelines
+own application building, signing, and notarization.
 
 ```sh
 mise run sync
 ```
 
-This updates the local cask from the latest stable release's DMG digest.
+This updates the local cask and daemon formula from the latest stable release's
+GitHub digests.
 
-On an Apple Silicon Mac, tap the local checkout before checking or installing it:
+On a supported Mac, tap the local checkout before checking or installing:
 
 ```sh
 brew tap yet-another-ai/tap "$PWD"
-brew style Casks/deskfleet.rb
+brew style Casks/deskfleet.rb Formula/deskfleet-daemon.rb
 brew audit --cask --new --online yet-another-ai/tap/deskfleet
+brew audit --formula --online yet-another-ai/tap/deskfleet-daemon
 brew install --cask yet-another-ai/tap/deskfleet
+brew install yet-another-ai/tap/deskfleet-daemon
 ```
 
-Quit DeskFleet from its tray menu before uninstalling:
+Quit DeskFleet from its tray menu before uninstalling the app:
 
 ```sh
 brew uninstall --cask yet-another-ai/tap/deskfleet
