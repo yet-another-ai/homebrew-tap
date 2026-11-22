@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/**
       - Casks/**
+      - Formula/**
       - .github/workflows/**
       - package.json
       - pnpm-lock.yaml
@@ -44,9 +45,9 @@ jobs:
       - name: Check utility types, formatting and release policy
         run: mise run check
 
-      - name: Check cask Ruby syntax
+      - name: Check cask and formula Ruby syntax
         run: |
           shopt -s nullglob
-          for cask in Casks/*.rb; do
-            ruby -c "$cask"
+          for file in Casks/*.rb Formula/*.rb; do
+            ruby -c "$file"
           done
