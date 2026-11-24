@@ -1,9 +1,9 @@
 cask "deskfleet" do
   arch arm: "arm64", intel: "x64"
 
-  version "0.21.0"
-  sha256 arm:   "b160b1a00da16741cf9b151ff5a74284ebbec8fb12efee49d55b83755cbcf5b1",
-         intel: "9259e5fbba5c16ec4adcaf134148ca22db6478842938074bf494b4648678320d"
+  version "0.23.0"
+  sha256 arm:   "18c2a94b6221f3f0e4d49833498a4fd823e2dff66262110f942b3ee5b41c8659",
+         intel: "72ce0ad6580dd9d78032f7b900f4ab62437927c1633ed0a43ac47a9107b261bb"
 
   url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-#{version}-mac-#{arch}.dmg"
   name "DeskFleet"
