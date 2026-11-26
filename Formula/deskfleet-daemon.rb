@@ -1,7 +1,7 @@
 class DeskfleetDaemon < Formula
   desc "Headless DeskFleet machine daemon"
   homepage "https://www.deskfleet.org/"
-  version "0.23.0"
+  version "0.24.0"
   license "Apache-2.0"
 
   depends_on :macos
@@ -9,12 +9,12 @@ class DeskfleetDaemon < Formula
   on_macos do
     on_arm do
       url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-arm64.tar.gz"
-      sha256 "b0e9cb80d5f11969e64575bd7e2c2fba3095a6e96986aecbbb28e5f25cf6b69b"
+      sha256 "acf1eb6eacd882fd99e51c3707430b50e47b3763791659bcceac84377e6b3d22"
     end
 
     on_intel do
       url "https://github.com/yet-another-ai/deskfleet/releases/download/v#{version}/deskfleet-macos-x64.tar.gz"
-      sha256 "f32d24d5efa8f712aefd6a2de9095a0b36bb9ba13e5a42e3ccb848f1e92dd352"
+      sha256 "c9a485949375e90078e09e96d9aac905766f1bd2b34bb6ec809bf041dd89d929"
     end
   end
 
